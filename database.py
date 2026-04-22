@@ -1,1 +1,15 @@
-items = []
+from sqlalchemy import create_engine, String, Column, Integer
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+engine = create_engine(
+        "sqlite:///./items.db", 
+        connect_args={"check_same_thread": False}
+    )
+
+sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
+class Items(Base):
+    __tablename__ = "Items"
