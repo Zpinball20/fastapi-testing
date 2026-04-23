@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
-from schemas.item import Item, ItemCreate
+from schemas.item_schema import Item, ItemCreate
 from database import SessionLocal
 from sqlalchemy.orm import Session
-from models.item import Item as DBItem
+from models.item_model import Item as DBItem
 from typing import Optional
 
 router = APIRouter()
