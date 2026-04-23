@@ -3,6 +3,7 @@ from schemas import Item, ItemCreate
 from database import SessionLocal
 from sqlalchemy.orm import Session
 from models import Item as DBItem
+from typing import Optional
 
 router = APIRouter()
 
@@ -18,8 +19,15 @@ def root():
     return {"message" : "Task Manager App Test"}
 
 @router.get("/items/", response_model=list[Item])
-def list_items(db: Session = Depends(get_db)):
-    return db.query(DBItem).all()
+def filter_items(done: Optional[bool] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    query = db.query(DBItem)
+
+    if done is not None:
+        query = query.filter(DBItem.is_done == done)
+        
+    query = query.offset(skip).limit(limit)
+
+    return query.all()
 
 @router.get("/items/{item_id}", response_model=Item)
 def get_item(item_id: int, db:Session = Depends(get_db)) -> Item:
