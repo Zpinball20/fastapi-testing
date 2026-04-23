@@ -29,7 +29,7 @@ def get_item(item_id: int, db:Session = Depends(get_db)) -> Item:
 @router.post("/items/", response_model=Item)
 def create_item(item: ItemCreate, db:Session = Depends(get_db)):
     if db.query(DBItem).filter(DBItem.text == item.text).first():
-        raise HTTPException(status_code=404, detail="Task already exists!")
+        raise HTTPException(status_code=409, detail="Task already exists!")
     
     newItem = DBItem(**item.model_dump())
     db.add(newItem)
