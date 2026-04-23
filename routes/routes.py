@@ -1,25 +1,42 @@
-from fastapi import APIRouter, HTTPException
-from schemas import Item
-from schemas import Item
+from fastapi import APIRouter, HTTPException, Depends
+from schemas import Item, ItemCreate
+from database import SessionLocal
+from sqlalchemy.orm import Session
+from models import Item as DBItem
 
 router = APIRouter()
-next_id = 0
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @router.get("/")
 def root():
-    return {"Hello" : "World"}
+    return {"message" : "Task Manager App Test"}
 
-@router.post("/items")
-def create_item(item: Item):
-    global next_id
-    item.id = next_id
-    next_id += 1
-    items.append(item)
+@router.get("/items/{item_id}", response_model=Item)
+def get_item(item_id: int, db:Session = Depends(get_db)) -> Item:
+    item = db.query(DBItem).filter(DBItem.id == item_id).first()
+    
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    
     return item
 
-@router.get("/items", response_model = list[Item])
-def list_items(limit: int = 10):
-    return items[0:limit]
+@router.post("/items/", response_model=Item)
+def create_item(item: ItemCreate, db:Session = Depends(get_db)):
+    if db.query(DBItem).filter(DBItem.text == item.text).first():
+        raise HTTPException(status_code=404, detail="Task already exists!")
+    
+    newItem = DBItem(**item.model_dump())
+    db.add(newItem)
+    db.commit()
+    db.refresh(newItem)
+    return newItem
+    
 
 @router.put("/items/{item_id}", response_model=Item)
 def update_item(item_id: int, item: Item):
@@ -30,16 +47,6 @@ def update_item(item_id: int, item: Item):
             return item
     
     raise HTTPException(status_code=404, detail="Item not found")
-
-
-@router.get("/items/{item_id}", response_model=Item)
-def get_item(item_id: int) -> Item:
-    for item_obj in items:
-        if item_obj.id == item_id:
-            return item_obj
-    
-    raise HTTPException(status_code= 404, detail="Item Not Found")
-    
 
 @router.delete("/items/{item_id}")
 def delete_item(item_id: int):

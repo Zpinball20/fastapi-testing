@@ -1,6 +1,13 @@
 from pydantic import BaseModel
 
-class Item(BaseModel):
-    id: int = None
-    text: str = None
+class ItemCreate(BaseModel):
+    text: str
     is_done: bool = False
+
+class Item(BaseModel):
+    id: int
+    text: str
+    is_done: bool
+
+    class Config:
+        from_attributes = True
