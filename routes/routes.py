@@ -17,6 +17,10 @@ def get_db():
 def root():
     return {"message" : "Task Manager App Test"}
 
+@router.get("/items/", response_model=list[Item])
+def list_items(db: Session = Depends(get_db)):
+    return db.query(DBItem).all()
+
 @router.get("/items/{item_id}", response_model=Item)
 def get_item(item_id: int, db:Session = Depends(get_db)) -> Item:
     item = db.query(DBItem).filter(DBItem.id == item_id).first()
@@ -31,28 +35,36 @@ def create_item(item: ItemCreate, db:Session = Depends(get_db)):
     if db.query(DBItem).filter(DBItem.text == item.text).first():
         raise HTTPException(status_code=409, detail="Task already exists!")
     
-    newItem = DBItem(**item.model_dump())
-    db.add(newItem)
+    new_item = DBItem(**item.model_dump())
+    db.add(new_item)
     db.commit()
-    db.refresh(newItem)
-    return newItem
+    db.refresh(new_item)
+    return new_item
     
 
 @router.put("/items/{item_id}", response_model=Item)
-def update_item(item_id: int, item: Item):
-    for index, existing_item in enumerate(items):
-        if existing_item.id == item_id:
-            item.id = item_id
-            items[index] = item
-            return item
+def update_item(item_id: int, item: ItemCreate, db: Session = Depends(get_db)):
+    db_item = db.query(DBItem).filter(DBItem.id == item_id).first()
+
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Item not found")
     
-    raise HTTPException(status_code=404, detail="Item not found")
+    db_item.text = item.text
+    db_item.is_done = item.is_done
+
+    db.commit()
+    db.refresh(db_item)
+
+    return db_item
 
 @router.delete("/items/{item_id}")
-def delete_item(item_id: int):
-    for item_obj in items:
-        if item_obj.id == item_id:
-            items.remove(item_obj)
-            return {"message": "Item deleted"}
+def delete_item(item_id: int, db: Session = Depends(get_db)):
+    db_item = db.query(DBItem).filter(DBItem.id == item_id).first()
+
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Item not found")
     
-    raise HTTPException(status_code=404, detail="Item not found")
+    db.delete(db_item)
+    db.commit()
+
+    return {"message" : "Item successfully deleted"}
